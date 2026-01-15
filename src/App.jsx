@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import hinhCv from './assets/hinh-CV.jpg';
 import CV from './assets/Lâm_Quốc_Vinh_CV.pdf';
 import fptLogo from './assets/logo_FPT-removebg-preview.png';
+import { useReducedMotion } from "framer-motion";
 import {
   SiReact,
   SiHtml5,
@@ -24,26 +25,55 @@ import {
 import { TbBrandReactNative } from "react-icons/tb";
 
 export default function Portfolio() {
+
+  const prefersReducedMotion = useReducedMotion();
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 768px)");
+
+    const update = () => setIsMobile(media.matches);
+    update();
+
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [typedText, setTypedText] = useState("");
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { scrollY } = useScroll();
-  const blob1Y = useTransform(scrollY, [0, 1000], [0, 200]);
-  const blob2Y = useTransform(scrollY, [0, 1000], [0, -150]);
+  const blob1YTransform = useTransform(scrollY, [0, 1000], [0, 200]);
+  const blob2YTransform = useTransform(scrollY, [0, 1000], [0, -150]);
+
+  const blob1Y = (isMobile || prefersReducedMotion) ? 0 : blob1YTransform;
+  const blob2Y = (isMobile || prefersReducedMotion) ? 0 : blob2YTransform;
 
   const phrases = ["Web development", "Software engineer", "Eager to learn"];
 
   useEffect(() => {
+    if (isMobile || prefersReducedMotion) return;
+
     const handleMouseMove = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
+
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [isMobile, prefersReducedMotion]);
+
 
   useEffect(() => {
+
+    if (isMobile || prefersReducedMotion) {
+      setTypedText(phrases[0]);
+      return;
+    }
+
     const currentPhrase = phrases[currentPhraseIndex];
     const typingSpeed = isDeleting ? 50 : 100;
     const pauseTime = isDeleting ? 500 : 2000;
@@ -64,7 +94,7 @@ export default function Portfolio() {
     }, typingSpeed);
 
     return () => clearTimeout(timer);
-  }, [typedText, isDeleting, currentPhraseIndex]);
+  }, [typedText, isDeleting, currentPhraseIndex, isMobile, prefersReducedMotion]);
 
   const fadeUp = {
     initial: { opacity: 0, y: 60 },
@@ -243,11 +273,14 @@ export default function Portfolio() {
                 <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent pb-1">
                   {typedText}
                 </span>
-                <motion.span
-                  className="inline-block w-1 h-8 bg-purple-400 ml-1"
-                  animate={{ opacity: [1, 0, 1] }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
-                />
+                {!isMobile && !prefersReducedMotion && (
+                  <motion.span
+                    className="inline-block w-1 h-8 bg-purple-400 ml-1"
+                    animate={{ opacity: [1, 0, 1] }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                  />
+                )}
+
               </div>
 
               <p className="text-xl text-gray-400 leading-relaxed mb-6">
@@ -274,14 +307,23 @@ export default function Portfolio() {
               />
 
               {/* Image container */}
-              <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-full overflow-hidden border-4 border-black bg-gradient-to-br from-purple-900/20 to-pink-900/20 backdrop-blur-sm">
+
+              <motion.div
+                className="relative w-64 h-64 md:w-80 md:h-80 rounded-full overflow-hidden border-4 border-black"
+                whileHover={
+                  !isMobile && !prefersReducedMotion
+                    ? { scale: 1.05 }
+                    : {}
+                }
+
+              >
                 <img
                   src={hinhCv}
                   alt="Lam Quoc Vinh"
                   className="w-full h-full object-cover object-[50%_35%]"
                 />
+              </motion.div>
 
-              </div>
 
               {/* Decorative elements */}
               <motion.div
@@ -447,13 +489,15 @@ export default function Portfolio() {
                 key={project.title}
                 className="group relative overflow-hidden rounded-2xl
     border border-white/10
-    bg-white/5 backdrop-blur-xl
+    bg-white/5 md:backdrop-blur-xl
     p-8 cursor-pointer"
                 variants={fadeUp}
-                whileHover={{
-                  y: -12,
-                  scale: 1.03,
-                }}
+                whileHover={
+                  isMobile
+                    ? {}
+                    : { y: -12, scale: 1.03 }
+                }
+
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               >
                 {/* ===== BG MÀU – HIỆN RÕ ===== */}
@@ -583,7 +627,7 @@ export default function Portfolio() {
           group relative flex items-center gap-3
           px-6 py-3 rounded-full
           border border-white/10
-          bg-white/5 backdrop-blur-md
+          bg-white/5 md:backdrop-blur-md
           text-gray-300 cursor-pointer
         "
                   variants={{
